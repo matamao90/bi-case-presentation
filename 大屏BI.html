@@ -22,46 +22,53 @@
         body {
             background: #0a1a2a;
             margin: 0;
-            width: 100vw;
-            height: 100vh;
+            width: 430px;
+            height: 932px;
             overflow: hidden;
+            font-size: 12px;
         }
 
         #main {
-            width: 100vw;
-            height: 100vh;
+            width: 430px;
+            height: 932px;
         }
 
-        /* 适配手机端的面板样式 */
+        /* 手机端面板样式 */
         .panel {
             position: absolute;
             background: rgba(10,26,42,0.95);
-            border-radius: 12px;
-            box-shadow: 0 0 16px #00eaff55;
+            border-radius: 8px;
+            box-shadow: 0 0 12px #00eaff55;
+            border: 1px solid #00eaff;
+        }
+        
+        /* 响应式字体 */
+        * {
+            font-size: 10px !important;
         }
     </style>
 </head>
 
 <body>
-    <div id="title" style="position:absolute;top:2vh;left:0;width:100vw;text-align:center;font-size:2.2rem;color:#00eaff;font-family:'Microsoft YaHei',sans-serif;letter-spacing:2px;text-shadow:0 0 8px #00eaff;z-index:10;"></div>
-    <div id="keyIndicators" style="position:absolute;left:10vw;top:5vh;width:80vw;height:5vh;display:flex;justify-content:space-around;align-items:center;color:#fff;font-size:1.1rem;z-index:10;">
+    <div id="title" style="position:absolute;top:10px;left:0;width:430px;text-align:center;font-size:16px;color:#00eaff;font-family:'Microsoft YaHei',sans-serif;letter-spacing:1px;text-shadow:0 0 6px #00eaff;z-index:10;"></div>
+    <div id="keyIndicators" style="position:absolute;left:10px;top:35px;width:410px;height:30px;display:flex;justify-content:space-around;align-items:center;color:#fff;font-size:10px;z-index:10;">
         <div>总产量：<span id="totalProd" style="color:#00eaff;">-</span></div>
         <div>平均能耗：<span id="avgEnergy" style="color:#ffea00;">-</span></div>
         <div>报警率：<span id="alarmRate" style="color:#ff4c4c;">-</span></div>
     </div>
-    <div id="centerMap" class="panel" style="left:2vw;top:10vh;width:96vw;height:22vh;z-index:1;display:flex;align-items:center;justify-content:center;">
+    <div id="centerMap" class="panel" style="left:10px;top:70px;width:410px;height:180px;z-index:1;display:flex;align-items:center;justify-content:center;">
         <div id="sichuanMap" style="width:100%;height:100%;"></div>
     </div>
-    <!-- 3D模型展示区域，带边框便于调试 -->
-    <div id="threeContainer" class="panel" style="left:2vw;top:32vh;width:96vw;height:18vh;z-index:2;display:flex;align-items:center;justify-content:center;border:2px solid #00eaff;background:rgba(0,255,255,0.1);">
-        <div id="modelLoadingStatus" style="color:#ffea00;font-size:1rem;text-align:center;">正在加载3D模型...</div>
+    <!-- 3D模型展示区域 -->
+    <div id="threeContainer" class="panel" style="left:10px;top:260px;width:410px;height:140px;z-index:2;display:flex;align-items:center;justify-content:center;border:2px solid #00eaff;background:rgba(0,255,255,0.1);">
+        <div id="modelLoadingStatus" style="color:#ffea00;font-size:10px;text-align:center;">正在加载3D模型...</div>
     </div>
-    <div id="panel1" class="panel" style="left:2vw;top:51vh;width:48vw;height:15vh;z-index:2;"></div>
-    <div id="panel2" class="panel" style="left:50vw;top:51vh;width:48vw;height:15vh;z-index:2;"></div>
-    <div id="panel3" class="panel" style="left:2vw;top:67vh;width:48vw;height:15vh;z-index:2;"></div>
-    <div id="panel4" class="panel" style="left:50vw;top:67vh;width:48vw;height:15vh;z-index:2;"></div>
-    <div id="panel5" class="panel" style="left:2vw;top:83vh;width:48vw;height:15vh;z-index:2;"></div>
-    <div id="panel6" class="panel" style="left:50vw;top:83vh;width:48vw;height:15vh;z-index:2;"></div>
+    <div id="panel1" class="panel" style="left:10px;top:410px;width:200px;height:100px;z-index:2;"></div>
+    <div id="panel2" class="panel" style="left:220px;top:410px;width:200px;height:100px;z-index:2;"></div>
+    <div id="panel3" class="panel" style="left:10px;top:520px;width:200px;height:100px;z-index:2;"></div>
+    <div id="panel4" class="panel" style="left:220px;top:520px;width:200px;height:100px;z-index:2;"></div>
+    <div id="panel5" class="panel" style="left:10px;top:630px;width:200px;height:100px;z-index:2;"></div>
+    <div id="panel6" class="panel" style="left:220px;top:630px;width:200px;height:100px;z-index:2;"></div>
     <script>
     // 标题打字动画
     const titleText = '瑞途电子·生产数据大屏';
@@ -76,10 +83,10 @@
     typeTitle();
     // 四川省各市模拟数据，每个城市对应不同的3D模型
     var cityData = {
-        '成都市': {prod: [1320, 1280, 1350, 1400], energy: [120, 132, 101, 134, 90, 230], type: [20, 15, 30, 25, 10], rate: 86, alarm: 8, trend: [120, 132, 101, 134, 90, 230], model: '1.gltf'},
-        '绵阳市': {prod: [220, 180, 250, 300], energy: [100, 112, 91, 124, 80, 210], type: [18, 12, 28, 22, 8], rate: 78, alarm: 12, trend: [100, 112, 91, 124, 80, 210], model: '2.gltf'},
-        '德阳市': {prod: [180, 160, 100, 240], energy: [90, 102, 81, 114, 70, 180], type: [15, 10, 20, 18, 7], rate: 82, alarm: 10, trend: [90, 102, 81, 114, 70, 180], model: '3.gltf'},
-        '乐山市': {prod: [150, 140, 180, 200], energy: [80, 92, 71, 104, 60, 150], type: [12, 8, 18, 15, 6], rate: 75, alarm: 15, trend: [80, 92, 71, 104, 60, 150], model: '4.gltf'},
+        '成都市': {prod: [1320, 1280, 1350, 1400], energy: [120, 132, 101, 134, 90, 230], type: [20, 15, 30, 25, 10], rate: 86, alarm: 8, trend: [120, 132, 101, 134, 90, 230], model: 'solo/1.gltf'},
+        '绵阳市': {prod: [220, 180, 250, 300], energy: [100, 112, 91, 124, 80, 210], type: [18, 12, 28, 22, 8], rate: 78, alarm: 12, trend: [100, 112, 91, 124, 80, 210], model: 'solo/2.gltf'},
+        '德阳市': {prod: [180, 160, 100, 240], energy: [90, 102, 81, 114, 70, 180], type: [15, 10, 20, 18, 7], rate: 82, alarm: 10, trend: [90, 102, 81, 114, 70, 180], model: 'solo/3.gltf'},
+        '乐山市': {prod: [150, 140, 180, 200], energy: [80, 92, 71, 104, 60, 150], type: [12, 8, 18, 15, 6], rate: 75, alarm: 15, trend: [80, 92, 71, 104, 60, 150], model: 'solo/4.gltf'},
         // ... 可继续补充其他市
     };
     var currentCity = '成都市';
@@ -102,16 +109,7 @@
         }]
     };
     mapChart.setOption(mapOption);
-    mapChart.on('mouseover', function(params) {
-        if(cityData[params.name]) {
-            currentCity = params.name;
-            window.currentCity = currentCity; // 同步到全局
-            updatePanels();
-            updateKeyIndicators(currentCity);
-            updateThreeDModel(currentCity);
-        }
-    });
-    // 新增点击事件监听，支持移动端点击切换城市
+    // 只保留点击事件，移除hover事件
     mapChart.on('click', function(params) {
         if(cityData[params.name]) {
             currentCity = params.name;
@@ -119,6 +117,7 @@
             updatePanels();
             updateKeyIndicators(currentCity);
             updateThreeDModel(currentCity);
+            console.log(`切换到城市: ${currentCity}`);
         }
     });
     // 关键指标展示
@@ -181,23 +180,46 @@
         camera = new THREE.PerspectiveCamera(45, container.offsetWidth / container.offsetHeight, 0.1, 1000);
         camera.position.set(0, 0, 8);
         
-        // 创建渲染器
-        renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        // 创建渲染器（启用更多渲染特性）
+        renderer = new THREE.WebGLRenderer({ 
+            alpha: true, 
+            antialias: true,
+            powerPreference: "high-performance"
+        });
         renderer.setSize(container.offsetWidth, container.offsetHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
         container.appendChild(renderer.domElement);
         
-        // 添加光源（增强光照效果）
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        // 添加多层光源系统
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
         scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        directionalLight.position.set(10, 20, 20);
+        
+        // 主光源
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        directionalLight.position.set(20, 30, 20);
         directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
         scene.add(directionalLight);
         
-        // 添加额外的点光源
-        const pointLight = new THREE.PointLight(0x00eaff, 0.5, 100);
-        pointLight.position.set(0, 10, 10);
-        scene.add(pointLight);
+        // 补光源
+        const fillLight = new THREE.DirectionalLight(0x00eaff, 0.8);
+        fillLight.position.set(-20, 10, -20);
+        scene.add(fillLight);
+        
+        // 动态点光源
+        const pointLight1 = new THREE.PointLight(0x00eaff, 1.0, 50);
+        pointLight1.position.set(10, 15, 10);
+        pointLight1.castShadow = true;
+        scene.add(pointLight1);
+        
+        const pointLight2 = new THREE.PointLight(0xffea00, 0.8, 40);
+        pointLight2.position.set(-10, 10, -10);
+        scene.add(pointLight2);
         
         // 开始动画循环
         animate();
@@ -287,18 +309,42 @@
                 // 添加新模型到场景
                 currentModel = gltf.scene;
                 
-                // 添加材质和光照效果，解决纯白问题
+                // 修复Z轴翻转问题
+                currentModel.rotation.x = Math.PI;
+                
+                // 增强材质和渲染效果
                 currentModel.traverse(function(child) {
                     if (child.isMesh) {
-                        // 确保材质正确显示
+                        // 创建增强的材质
                         if (child.material) {
-                            child.material.needsUpdate = true;
-                            // 如果材质是白色，给它一些颜色
-                            if (child.material.color && child.material.color.r === 1 && child.material.color.g === 1 && child.material.color.b === 1) {
-                                child.material.color.setHex(0x888888); // 设置为灰色
+                            // 如果是基础材质，升级为物理材质
+                            if (child.material.type === 'MeshBasicMaterial' || child.material.type === 'MeshLambertMaterial') {
+                                const oldMaterial = child.material;
+                                child.material = new THREE.MeshStandardMaterial({
+                                    color: oldMaterial.color || 0x888888,
+                                    metalness: 0.3,
+                                    roughness: 0.7,
+                                    envMapIntensity: 1.0
+                                });
                             }
+                            
+                            // 如果材质是纯白色，添加颜色变化
+                            if (child.material.color && child.material.color.r === 1 && child.material.color.g === 1 && child.material.color.b === 1) {
+                                // 根据物体位置生成不同颜色
+                                const hue = (child.position.x + child.position.z) * 0.01 % 1;
+                                child.material.color.setHSL(hue, 0.6, 0.7);
+                            }
+                            
+                            // 设置材质属性
+                            if (child.material.metalness !== undefined) {
+                                child.material.metalness = Math.random() * 0.5 + 0.2;
+                                child.material.roughness = Math.random() * 0.4 + 0.3;
+                            }
+                            
+                            child.material.needsUpdate = true;
                         }
-                        // 确保接受光照
+                        
+                        // 启用阴影
                         child.castShadow = true;
                         child.receiveShadow = true;
                     }
