@@ -1,0 +1,140 @@
+<!--
+  @file 科技感大屏Demo.html
+  @description ECharts实现科技感大屏风格的BI报表示例
+-->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>科技感大屏Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/map/js/province/sichuan.js"></script>
+    <style>
+        body {
+            background: #0a1a2a;
+            margin: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #main {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* 适配手机端的面板样式 */
+        .panel {
+            position: absolute;
+            background: rgba(10,26,42,0.95);
+            border-radius: 12px;
+            box-shadow: 0 0 16px #00eaff55;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="title" style="position:absolute;top:2vh;left:0;width:100vw;text-align:center;font-size:2.2rem;color:#00eaff;font-family:'Microsoft YaHei',sans-serif;letter-spacing:2px;text-shadow:0 0 8px #00eaff;z-index:10;"></div>
+    <div id="keyIndicators" style="position:absolute;left:10vw;top:5vh;width:80vw;height:5vh;display:flex;justify-content:space-around;align-items:center;color:#fff;font-size:1.1rem;z-index:10;">
+        <div>总产量：<span id="totalProd" style="color:#00eaff;">-</span></div>
+        <div>平均能耗：<span id="avgEnergy" style="color:#ffea00;">-</span></div>
+        <div>报警率：<span id="alarmRate" style="color:#ff4c4c;">-</span></div>
+    </div>
+    <div id="centerMap" class="panel" style="left:2vw;top:10vh;width:96vw;height:33vh;z-index:1;display:flex;align-items:center;justify-content:center;">
+        <div id="sichuanMap" style="width:100%;height:100%;"></div>
+    </div>
+    <div id="panel1" class="panel" style="left:2vw;top:45vh;width:48vw;height:15vh;z-index:2;"></div>
+    <div id="panel2" class="panel" style="left:50vw;top:45vh;width:48vw;height:15vh;z-index:2;"></div>
+    <div id="panel3" class="panel" style="left:2vw;top:61vh;width:48vw;height:15vh;z-index:2;"></div>
+    <div id="panel4" class="panel" style="left:50vw;top:61vh;width:48vw;height:15vh;z-index:2;"></div>
+    <div id="panel5" class="panel" style="left:2vw;top:77vh;width:48vw;height:15vh;z-index:2;"></div>
+    <div id="panel6" class="panel" style="left:50vw;top:77vh;width:48vw;height:15vh;z-index:2;"></div>
+    <script>
+    // 标题打字动画
+    const titleText = '瑞途电子·生产数据大屏';
+    let i = 0;
+    function typeTitle() {
+        if (i <= titleText.length) {
+            document.getElementById('title').innerText = titleText.slice(0, i);
+            i++;
+            setTimeout(typeTitle, 80);
+        }
+    }
+    typeTitle();
+    // 四川省各市模拟数据
+    var cityData = {
+        '成都市': {prod: [1320, 1280, 1350, 1400], energy: [120, 132, 101, 134, 90, 230], type: [20, 15, 30, 25, 10], rate: 86, alarm: 8, trend: [120, 132, 101, 134, 90, 230]},
+        '绵阳市': {prod: [220, 180, 250, 300], energy: [100, 112, 91, 124, 80, 210], type: [18, 12, 28, 22, 8], rate: 78, alarm: 12, trend: [100, 112, 91, 124, 80, 210]},
+        '德阳市': {prod: [180, 160, 100, 240], energy: [90, 102, 81, 114, 70, 180], type: [15, 10, 20, 18, 7], rate: 82, alarm: 10, trend: [90, 102, 81, 114, 70, 180]},
+        '乐山市': {prod: [150, 140, 180, 200], energy: [80, 92, 71, 104, 60, 150], type: [12, 8, 18, 15, 6], rate: 75, alarm: 15, trend: [80, 92, 71, 104, 60, 150]},
+        // ... 可继续补充其他市
+    };
+    var currentCity = '成都市';
+    // 初始化四川省地图
+    var mapChart = echarts.init(document.getElementById('sichuanMap'));
+    var mapOption = {
+        backgroundColor: 'transparent',
+        tooltip: {trigger: 'item'},
+        visualMap: {show: false, min: 0, max: 1500, inRange: {color: ['#003366', '#00eaff']}, left: 'right', top: 'top'},
+        series: [{
+            type: 'map',
+            map: '四川',
+            roam: true,
+            label: {show: true, color: '#00eaff', fontSize: 14},
+            itemStyle: {borderColor: '#00eaff', borderWidth: 1, areaColor: '#1a2a3a'},
+            emphasis: {label: {color: '#ffea00'}, itemStyle: {areaColor: '#003366'}},
+            data: Object.keys(cityData).map(city => ({name: city, value: cityData[city].prod[0]}))
+        }]
+    };
+    mapChart.setOption(mapOption);
+    mapChart.on('mouseover', function(params) {
+        if(cityData[params.name]) {
+            currentCity = params.name;
+            updatePanels();
+            updateKeyIndicators(currentCity);
+        }
+    });
+    // 新增点击事件监听，支持移动端点击切换城市
+    mapChart.on('click', function(params) {
+        if(cityData[params.name]) {
+            currentCity = params.name;
+            updatePanels();
+            updateKeyIndicators(currentCity);
+        }
+    });
+    // 关键指标展示
+    function updateKeyIndicators(city) {
+        const d = cityData[city];
+        document.getElementById('totalProd').innerText = d.prod.reduce((a,b)=>a+b,0);
+        document.getElementById('avgEnergy').innerText = (d.energy.reduce((a,b)=>a+b,0)/d.energy.length).toFixed(1);
+        document.getElementById('alarmRate').innerText = d.alarm + '%';
+    }
+    // 各报表渲染函数
+    function updatePanels() {
+        var d = cityData[currentCity];
+        // 1. 柱状图（产量）
+        var chart1 = echarts.init(document.getElementById('panel1'));
+        chart1.setOption({backgroundColor:'transparent',title:{text:currentCity+'产量',left:'center',textStyle:{color:'#00eaff',fontSize:14}},xAxis:{type:'category',data:['一车间','二车间','三车间','四车间'],axisLine:{lineStyle:{color:'#00eaff'}},axisLabel:{color:'#fff',fontSize:10}},yAxis:{type:'value',axisLine:{lineStyle:{color:'#00eaff'}},splitLine:{lineStyle:{color:'#1a2a3a'}},axisLabel:{color:'#fff',fontSize:10}},series:[{name:'产量',type:'bar',data:d.prod,itemStyle:{color:'#00eaff'}}]});
+        // 2. 折线图（能耗趋势）
+        var chart2 = echarts.init(document.getElementById('panel2'));
+        chart2.setOption({backgroundColor:'transparent',title:{text:currentCity+'能耗趋势',left:'center',textStyle:{color:'#00eaff',fontSize:14}},xAxis:{type:'category',data:['1月','2月','3月','4月','5月','6月'],axisLine:{lineStyle:{color:'#00eaff'}},axisLabel:{color:'#fff',fontSize:10}},yAxis:{type:'value',axisLine:{lineStyle:{color:'#00eaff'}},splitLine:{lineStyle:{color:'#1a2a3a'}},axisLabel:{color:'#fff',fontSize:10}},series:[{name:'能耗',type:'line',data:d.energy,lineStyle:{color:'#ffea00',width:2},itemStyle:{color:'#ffea00'}}]});
+        // 3. 饼图（设备类型分布）
+        var chart3 = echarts.init(document.getElementById('panel3'));
+        chart3.setOption({backgroundColor:'transparent',title:{text:currentCity+'设备类型分布',left:'center',textStyle:{color:'#00eaff',fontSize:14}},tooltip:{trigger:'item'},legend:{bottom:0,textStyle:{color:'#fff',fontSize:10}},series:[{name:'设备类型',type:'pie',radius:['40%','70%'],data:[{value:d.type[0],name:'传感器'},{value:d.type[1],name:'PLC'},{value:d.type[2],name:'机器人'},{value:d.type[3],name:'变频器'},{value:d.type[4],name:'其他'}],label:{color:'#fff',fontSize:10},itemStyle:{borderColor:'#0a1a2a',borderWidth:2}}]});
+        // 4. 仪表盘（设备稼动率）
+        var chart4 = echarts.init(document.getElementById('panel4'));
+        chart4.setOption({backgroundColor:'transparent',title:{text:currentCity+'设备稼动率',left:'center',textStyle:{color:'#00eaff',fontSize:14}},series:[{name:'稼动率',type:'gauge',min:0,max:100,splitNumber:5,axisLine:{lineStyle:{width:10,color:[[0.7,'#00eaff'],[1,'#ff4c4c']]}},pointer:{width:4},detail:{formatter:'{value}%',fontSize:14,color:'#fff'},data:[{value:d.rate,name:'稼动率'}]}]});
+        // 5. 环形进度条（报警率）
+        var chart5 = echarts.init(document.getElementById('panel5'));
+        chart5.setOption({backgroundColor:'transparent',title:{text:currentCity+'报警率',left:'center',textStyle:{color:'#00eaff',fontSize:14}},series:[{name:'报警率',type:'pie',radius:['70%','90%'],avoidLabelOverlap:false,label:{show:true,position:'center',formatter:d.alarm+'%',fontSize:16,color:'#ff4c4c'},data:[{value:d.alarm,name:'报警'},{value:100-d.alarm,name:'正常',itemStyle:{color:'#00eaff'}}],itemStyle:{borderColor:'#0a1a2a',borderWidth:2}}]});
+        // 6. 折线图（产量趋势）
+        var chart6 = echarts.init(document.getElementById('panel6'));
+        chart6.setOption({backgroundColor:'transparent',title:{text:currentCity+'产量趋势',left:'center',textStyle:{color:'#00eaff',fontSize:14}},xAxis:{type:'category',data:['1月','2月','3月','4月','5月','6月'],axisLine:{lineStyle:{color:'#00eaff'}},axisLabel:{color:'#fff',fontSize:10}},yAxis:{type:'value',axisLine:{lineStyle:{color:'#00eaff'}},splitLine:{lineStyle:{color:'#1a2a3a'}},axisLabel:{color:'#fff',fontSize:10}},series:[{name:'产量',type:'line',data:d.trend,lineStyle:{color:'#00eaff',width:2},itemStyle:{color:'#00eaff'}}]});
+    }
+    updatePanels();
+    updateKeyIndicators(currentCity);
+    </script>
+</body>
+
+</html>
