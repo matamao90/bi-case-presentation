@@ -1,0 +1,325 @@
+<!--
+  @file 科技感大屏Demo.html
+  @description ECharts实现科技感大屏风格的BI报表示例
+-->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>科技感大屏Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/map/js/province/sichuan.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: #0a1a2a;
+            margin: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #main {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* 适配手机端的面板样式 */
+        .panel {
+            position: absolute;
+            background: rgba(10,26,42,0.95);
+            border-radius: 12px;
+            box-shadow: 0 0 16px #00eaff55;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="title" style="position:absolute;top:2vh;left:0;width:100vw;text-align:center;font-size:2.2rem;color:#00eaff;font-family:'Microsoft YaHei',sans-serif;letter-spacing:2px;text-shadow:0 0 8px #00eaff;z-index:10;"></div>
+    <div id="keyIndicators" style="position:absolute;left:10vw;top:5vh;width:80vw;height:5vh;display:flex;justify-content:space-around;align-items:center;color:#fff;font-size:1.1rem;z-index:10;">
+        <div>总产量：<span id="totalProd" style="color:#00eaff;">-</span></div>
+        <div>平均能耗：<span id="avgEnergy" style="color:#ffea00;">-</span></div>
+        <div>报警率：<span id="alarmRate" style="color:#ff4c4c;">-</span></div>
+    </div>
+    <div id="centerMap" class="panel" style="left:2vw;top:10vh;width:96vw;height:22vh;z-index:1;display:flex;align-items:center;justify-content:center;">
+        <div id="sichuanMap" style="width:100%;height:100%;"></div>
+    </div>
+    <!-- 3D模型展示区域，带边框便于调试 -->
+    <div id="threeContainer" class="panel" style="left:2vw;top:32vh;width:96vw;height:18vh;z-index:2;display:flex;align-items:center;justify-content:center;border:2px solid #00eaff;background:rgba(0,255,255,0.1);">
+        <div id="modelLoadingStatus" style="color:#ffea00;font-size:1rem;text-align:center;">正在加载3D模型...</div>
+    </div>
+    <div id="panel1" class="panel" style="left:2vw;top:51vh;width:48vw;height:15vh;z-index:2;"></div>
+    <div id="panel2" class="panel" style="left:50vw;top:51vh;width:48vw;height:15vh;z-index:2;"></div>
+    <div id="panel3" class="panel" style="left:2vw;top:67vh;width:48vw;height:15vh;z-index:2;"></div>
+    <div id="panel4" class="panel" style="left:50vw;top:67vh;width:48vw;height:15vh;z-index:2;"></div>
+    <div id="panel5" class="panel" style="left:2vw;top:83vh;width:48vw;height:15vh;z-index:2;"></div>
+    <div id="panel6" class="panel" style="left:50vw;top:83vh;width:48vw;height:15vh;z-index:2;"></div>
+    <script>
+    // 标题打字动画
+    const titleText = '瑞途电子·生产数据大屏';
+    let i = 0;
+    function typeTitle() {
+        if (i <= titleText.length) {
+            document.getElementById('title').innerText = titleText.slice(0, i);
+            i++;
+            setTimeout(typeTitle, 80);
+        }
+    }
+    typeTitle();
+    // 四川省各市模拟数据，每个城市对应不同的3D模型
+    var cityData = {
+        '成都市': {prod: [1320, 1280, 1350, 1400], energy: [120, 132, 101, 134, 90, 230], type: [20, 15, 30, 25, 10], rate: 86, alarm: 8, trend: [120, 132, 101, 134, 90, 230], model: '1.gltf'},
+        '绵阳市': {prod: [220, 180, 250, 300], energy: [100, 112, 91, 124, 80, 210], type: [18, 12, 28, 22, 8], rate: 78, alarm: 12, trend: [100, 112, 91, 124, 80, 210], model: '3.gltf'},
+        '德阳市': {prod: [180, 160, 100, 240], energy: [90, 102, 81, 114, 70, 180], type: [15, 10, 20, 18, 7], rate: 82, alarm: 10, trend: [90, 102, 81, 114, 70, 180], model: '6.gltf'},
+        '乐山市': {prod: [150, 140, 180, 200], energy: [80, 92, 71, 104, 60, 150], type: [12, 8, 18, 15, 6], rate: 75, alarm: 15, trend: [80, 92, 71, 104, 60, 150], model: '10.gltf'},
+        // ... 可继续补充其他市
+    };
+    var currentCity = '成都市';
+    // 初始化四川省地图
+    var mapChart = echarts.init(document.getElementById('sichuanMap'));
+    var mapOption = {
+        backgroundColor: 'transparent',
+        tooltip: {trigger: 'item'},
+        visualMap: {show: false, min: 0, max: 1500, inRange: {color: ['#003366', '#00eaff']}, left: 'right', top: 'top'},
+        series: [{
+            type: 'map',
+            map: '四川',
+            roam: true,
+            label: {show: true, color: '#00eaff', fontSize: 14},
+            itemStyle: {borderColor: '#00eaff', borderWidth: 1, areaColor: '#1a2a3a'},
+            emphasis: {label: {color: '#ffea00'}, itemStyle: {areaColor: '#003366'}},
+            data: Object.keys(cityData).map(city => ({name: city, value: cityData[city].prod[0]}))
+        }]
+    };
+    mapChart.setOption(mapOption);
+    mapChart.on('mouseover', function(params) {
+        if(cityData[params.name]) {
+            currentCity = params.name;
+            updatePanels();
+            updateKeyIndicators(currentCity);
+            updateThreeDModel(currentCity);
+        }
+    });
+    // 新增点击事件监听，支持移动端点击切换城市
+    mapChart.on('click', function(params) {
+        if(cityData[params.name]) {
+            currentCity = params.name;
+            updatePanels();
+            updateKeyIndicators(currentCity);
+            updateThreeDModel(currentCity);
+        }
+    });
+    // 关键指标展示
+    function updateKeyIndicators(city) {
+        const d = cityData[city];
+        document.getElementById('totalProd').innerText = d.prod.reduce((a,b)=>a+b,0);
+        document.getElementById('avgEnergy').innerText = (d.energy.reduce((a,b)=>a+b,0)/d.energy.length).toFixed(1);
+        document.getElementById('alarmRate').innerText = d.alarm + '%';
+    }
+    // 各报表渲染函数
+    function updatePanels() {
+        var d = cityData[currentCity];
+        // 1. 柱状图（产量）
+        var chart1 = echarts.init(document.getElementById('panel1'));
+        chart1.setOption({backgroundColor:'transparent',title:{text:currentCity+'产量',left:'center',textStyle:{color:'#00eaff',fontSize:14}},xAxis:{type:'category',data:['一车间','二车间','三车间','四车间'],axisLine:{lineStyle:{color:'#00eaff'}},axisLabel:{color:'#fff',fontSize:10}},yAxis:{type:'value',axisLine:{lineStyle:{color:'#00eaff'}},splitLine:{lineStyle:{color:'#1a2a3a'}},axisLabel:{color:'#fff',fontSize:10}},series:[{name:'产量',type:'bar',data:d.prod,itemStyle:{color:'#00eaff'}}]});
+        // 2. 折线图（能耗趋势）
+        var chart2 = echarts.init(document.getElementById('panel2'));
+        chart2.setOption({backgroundColor:'transparent',title:{text:currentCity+'能耗趋势',left:'center',textStyle:{color:'#00eaff',fontSize:14}},xAxis:{type:'category',data:['1月','2月','3月','4月','5月','6月'],axisLine:{lineStyle:{color:'#00eaff'}},axisLabel:{color:'#fff',fontSize:10}},yAxis:{type:'value',axisLine:{lineStyle:{color:'#00eaff'}},splitLine:{lineStyle:{color:'#1a2a3a'}},axisLabel:{color:'#fff',fontSize:10}},series:[{name:'能耗',type:'line',data:d.energy,lineStyle:{color:'#ffea00',width:2},itemStyle:{color:'#ffea00'}}]});
+        // 3. 饼图（设备类型分布）
+        var chart3 = echarts.init(document.getElementById('panel3'));
+        chart3.setOption({backgroundColor:'transparent',title:{text:currentCity+'设备类型分布',left:'center',textStyle:{color:'#00eaff',fontSize:14}},tooltip:{trigger:'item'},legend:{bottom:0,textStyle:{color:'#fff',fontSize:10}},series:[{name:'设备类型',type:'pie',radius:['40%','70%'],data:[{value:d.type[0],name:'传感器'},{value:d.type[1],name:'PLC'},{value:d.type[2],name:'机器人'},{value:d.type[3],name:'变频器'},{value:d.type[4],name:'其他'}],label:{color:'#fff',fontSize:10},itemStyle:{borderColor:'#0a1a2a',borderWidth:2}}]});
+        // 4. 仪表盘（设备稼动率）
+        var chart4 = echarts.init(document.getElementById('panel4'));
+        chart4.setOption({backgroundColor:'transparent',title:{text:currentCity+'设备稼动率',left:'center',textStyle:{color:'#00eaff',fontSize:14}},series:[{name:'稼动率',type:'gauge',min:0,max:100,splitNumber:5,axisLine:{lineStyle:{width:10,color:[[0.7,'#00eaff'],[1,'#ff4c4c']]}},pointer:{width:4},detail:{formatter:'{value}%',fontSize:14,color:'#fff'},data:[{value:d.rate,name:'稼动率'}]}]});
+        // 5. 环形进度条（报警率）
+        var chart5 = echarts.init(document.getElementById('panel5'));
+        chart5.setOption({backgroundColor:'transparent',title:{text:currentCity+'报警率',left:'center',textStyle:{color:'#00eaff',fontSize:14}},series:[{name:'报警率',type:'pie',radius:['70%','90%'],avoidLabelOverlap:false,label:{show:true,position:'center',formatter:d.alarm+'%',fontSize:16,color:'#ff4c4c'},data:[{value:d.alarm,name:'报警'},{value:100-d.alarm,name:'正常',itemStyle:{color:'#00eaff'}}],itemStyle:{borderColor:'#0a1a2a',borderWidth:2}}]});
+        // 6. 折线图（产量趋势）
+        var chart6 = echarts.init(document.getElementById('panel6'));
+        chart6.setOption({backgroundColor:'transparent',title:{text:currentCity+'产量趋势',left:'center',textStyle:{color:'#00eaff',fontSize:14}},xAxis:{type:'category',data:['1月','2月','3月','4月','5月','6月'],axisLine:{lineStyle:{color:'#00eaff'}},axisLabel:{color:'#fff',fontSize:10}},yAxis:{type:'value',axisLine:{lineStyle:{color:'#00eaff'}},splitLine:{lineStyle:{color:'#1a2a3a'}},axisLabel:{color:'#fff',fontSize:10}},series:[{name:'产量',type:'line',data:d.trend,lineStyle:{color:'#00eaff',width:2},itemStyle:{color:'#00eaff'}}]});
+    }
+    updatePanels();
+    updateKeyIndicators(currentCity);
+    </script>
+    <script type="module">
+    /**
+     * @description 3D模型展示模块 - 支持根据城市动态切换模型
+     */
+    
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    
+    // 全局3D场景变量
+    let scene, camera, renderer, currentModel;
+    let isInitialized = false;
+    
+    /**
+     * @function initThreeDScene
+     * @description 初始化Three.js场景（只执行一次）
+     */
+    function initThreeDScene() {
+        if (isInitialized) return;
+        
+        const container = document.getElementById('threeContainer');
+        
+        // 创建场景
+        scene = new THREE.Scene();
+        
+        // 创建相机
+        camera = new THREE.PerspectiveCamera(45, container.offsetWidth / container.offsetHeight, 0.1, 1000);
+        camera.position.set(0, 0, 8);
+        
+        // 创建渲染器
+        renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(container.offsetWidth, container.offsetHeight);
+        container.appendChild(renderer.domElement);
+        
+        // 添加光源
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(10, 20, 20);
+        scene.add(directionalLight);
+        
+        // 开始动画循环
+        animate();
+        
+        // 窗口尺寸变化时自适应
+        window.addEventListener('resize', function() {
+            const width = container.offsetWidth;
+            const height = container.offsetHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        });
+        
+        isInitialized = true;
+        console.log('大屏BI - 3D场景初始化完成');
+    }
+    
+    /**
+     * @function fitModelToView
+     * @description 自动缩放和居中模型到视野
+     * @param {THREE.Object3D} object 模型对象
+     */
+    function fitModelToView(object) {
+        const box = new THREE.Box3().setFromObject(object);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        
+        // 居中模型
+        object.position.sub(center);
+        
+                 // 适当缩放（增大模型以便更好观察）
+         const maxDim = Math.max(size.x, size.y, size.z);
+         if (maxDim > 0) {
+             const scale = maxDim < 8 ? 8 / maxDim : 1.0; // 放大到8个单位
+             object.scale.set(scale, scale, scale);
+         }
+        
+                 // 调整相机位置（适应放大后的模型）
+         camera.position.set(0, 0, Math.max(12, maxDim * 2));
+         camera.lookAt(0, 0, 0);
+        
+        console.log(`大屏BI - 模型适配完成，尺寸: ${size.x.toFixed(2)} x ${size.y.toFixed(2)} x ${size.z.toFixed(2)}`);
+    }
+    
+    /**
+     * @function updateThreeDModel
+     * @description 根据城市切换3D模型
+     * @param {string} cityName 城市名称
+     */
+    window.updateThreeDModel = function(cityName) {
+        // 确保场景已初始化
+        initThreeDScene();
+        
+        const statusElement = document.getElementById('modelLoadingStatus');
+        const cityInfo = cityData[cityName];
+        
+        if (!cityInfo || !cityInfo.model) {
+            console.warn(`大屏BI - 城市 ${cityName} 没有对应的3D模型`);
+            return;
+        }
+        
+        // 移除当前模型
+        if (currentModel) {
+            scene.remove(currentModel);
+            currentModel = null;
+        }
+        
+        // 显示加载状态
+        statusElement.style.display = 'block';
+        statusElement.textContent = `正在加载${cityName}的3D模型...`;
+        statusElement.style.color = '#ffea00';
+        
+        // 加载新模型
+        const loader = new GLTFLoader();
+        const modelPath = `./3d/solo/${cityInfo.model}`;
+        
+        console.log(`大屏BI - 开始加载模型: ${modelPath}`);
+        
+        loader.load(modelPath,
+            function(gltf) {
+                console.log(`大屏BI - ${cityName}模型加载成功!`);
+                
+                // 隐藏加载状态
+                statusElement.style.display = 'none';
+                
+                         // 添加新模型到场景
+         currentModel = gltf.scene;
+         // 修复Z轴翻转问题
+         currentModel.rotation.x = Math.PI;
+         fitModelToView(currentModel);
+         scene.add(currentModel);
+                
+                console.log(`大屏BI - ${cityName}模型已添加到场景`);
+            },
+            function(progress) {
+                const percent = (progress.loaded / progress.total * 100).toFixed(1);
+                statusElement.textContent = `正在加载${cityName}的3D模型... ${percent}%`;
+            },
+            function(error) {
+                console.error(`大屏BI - ${cityName}模型加载失败:`, error);
+                statusElement.textContent = `${cityName}模型加载失败`;
+                statusElement.style.color = '#ff4c4c';
+                
+                // 3秒后隐藏错误信息
+                setTimeout(() => {
+                    statusElement.style.display = 'none';
+                }, 3000);
+            }
+        );
+    };
+    
+    /**
+     * @function animate
+     * @description 动画循环
+     */
+    function animate() {
+        requestAnimationFrame(animate);
+        
+        // 让当前模型缓慢旋转
+        if (currentModel) {
+            currentModel.rotation.y += 0.005;
+        }
+        
+        renderer.render(scene, camera);
+    }
+    
+    // 页面加载完成后初始化场景并加载默认模型
+    document.addEventListener('DOMContentLoaded', function() {
+        initThreeDScene();
+        updateThreeDModel(currentCity); // 加载默认城市的模型
+    });
+    </script>
+</body>
+
+</html>

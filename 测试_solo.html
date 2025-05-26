@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Solo模型测试</title>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+            }
+        }
+    </script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #222;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        #container {
+            width: 800px;
+            height: 600px;
+            border: 2px solid #00eaff;
+            margin: 20px 0;
+        }
+
+        .controls {
+            margin: 10px 0;
+        }
+
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            background: #00eaff;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #ffea00;
+        }
+
+        #status {
+            color: #ffea00;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Solo模型测试页面</h1>
+    <div id="status">准备加载模型...</div>
+
+    <div class="controls">
+        <h3>选择模型：</h3>
+        <button onclick="loadModel('1.gltf')">模型1 (成都市)</button>
+        <button onclick="loadModel('3.gltf')">模型3 (绵阳市)</button>
+        <button onclick="loadModel('6.gltf')">模型6 (德阳市)</button>
+        <button onclick="loadModel('10.gltf')">模型10 (乐山市)</button>
+    </div>
+
+    <div class="controls">
+        <h3>更多模型：</h3>
+        <button onclick="loadModel('2.gltf')">模型2</button>
+        <button onclick="loadModel('4.gltf')">模型4</button>
+        <button onclick="loadModel('5.gltf')">模型5</button>
+        <button onclick="loadModel('7.gltf')">模型7</button>
+        <button onclick="loadModel('8.gltf')">模型8</button>
+        <button onclick="loadModel('9.gltf')">模型9</button>
+        <button onclick="loadModel('11.gltf')">模型11</button>
+        <button onclick="loadModel('12.gltf')">模型12</button>
+        <button onclick="loadModel('13.gltf')">模型13</button>
+    </div>
+
+    <div id="container"></div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        // 全局变量
+        let scene, camera, renderer, currentModel;
+        const container = document.getElementById('container');
+        const statusElement = document.getElementById('status');
+
+        // 初始化Three.js场景
+        function initScene() {
+            // 创建场景
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x222222);
+
+            // 创建相机
+            camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
+            camera.position.set(0, 0, 8);
+
+            // 创建渲染器
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.offsetWidth, container.offsetHeight);
+            container.appendChild(renderer.domElement);
+
+            // 添加光源
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 10, 5);
+            scene.add(directionalLight);
+
+            // 添加网格辅助器
+            const gridHelper = new THREE.GridHelper(10, 10);
+            scene.add(gridHelper);
+
+            // 开始动画循环
+            animate();
+
+            console.log('Solo测试 - 场景初始化完成');
+        }
+
+        // 适配模型到视野
+        function fitModelToView(object) {
+            const box = new THREE.Box3().setFromObject(object);
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+
+            console.log('Solo测试 - 模型尺寸:', size);
+            console.log('Solo测试 - 模型中心:', center);
+
+            // 居中模型
+            object.position.sub(center);
+
+            // 适当缩放
+            const maxDim = Math.max(size.x, size.y, size.z);
+            if (maxDim > 6) {
+                const scale = 6 / maxDim;
+                object.scale.set(scale, scale, scale);
+                console.log('Solo测试 - 应用缩放:', scale);
+            }
+
+            // 调整相机位置
+            camera.position.set(0, 0, Math.max(8, maxDim * 1.5));
+            camera.lookAt(0, 0, 0);
+        }
+
+        // 加载模型函数
+        window.loadModel = function (modelFile) {
+            statusElement.textContent = `正在加载 ${modelFile}...`;
+            statusElement.style.color = '#ffea00';
+
+            // 移除当前模型
+            if (currentModel) {
+                scene.remove(currentModel);
+                currentModel = null;
+            }
+
+            // 加载新模型
+            const loader = new GLTFLoader();
+            const modelPath = `./3d/solo/${modelFile}`;
+
+            console.log(`Solo测试 - 开始加载: ${modelPath}`);
+
+            loader.load(modelPath,
+                function (gltf) {
+                    console.log(`Solo测试 - ${modelFile} 加载成功!`);
+                    statusElement.textContent = `${modelFile} 加载成功!`;
+                    statusElement.style.color = '#00ff00';
+
+                    currentModel = gltf.scene;
+                    // 修复Z轴翻转问题
+                    currentModel.rotation.x = Math.PI;
+                    fitModelToView(currentModel);
+                    scene.add(currentModel);
+                },
+                function (progress) {
+                    const percent = (progress.loaded / progress.total * 100).toFixed(1);
+                    statusElement.textContent = `正在加载 ${modelFile}... ${percent}%`;
+                },
+                function (error) {
+                    console.error(`Solo测试 - ${modelFile} 加载失败:`, error);
+                    statusElement.textContent = `${modelFile} 加载失败!`;
+                    statusElement.style.color = '#ff4c4c';
+                }
+            );
+        };
+
+        // 动画循环
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 让模型缓慢旋转
+            if (currentModel) {
+                currentModel.rotation.y += 0.01;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // 初始化
+        initScene();
+        statusElement.textContent = '场景初始化完成，请选择模型进行测试';
+        statusElement.style.color = '#00eaff';
+    </script>
+</body>
+
+</html>
