@@ -77,12 +77,14 @@
     // 四川省各市模拟数据，每个城市对应不同的3D模型
     var cityData = {
         '成都市': {prod: [1320, 1280, 1350, 1400], energy: [120, 132, 101, 134, 90, 230], type: [20, 15, 30, 25, 10], rate: 86, alarm: 8, trend: [120, 132, 101, 134, 90, 230], model: '1.gltf'},
-        '绵阳市': {prod: [220, 180, 250, 300], energy: [100, 112, 91, 124, 80, 210], type: [18, 12, 28, 22, 8], rate: 78, alarm: 12, trend: [100, 112, 91, 124, 80, 210], model: '3.gltf'},
-        '德阳市': {prod: [180, 160, 100, 240], energy: [90, 102, 81, 114, 70, 180], type: [15, 10, 20, 18, 7], rate: 82, alarm: 10, trend: [90, 102, 81, 114, 70, 180], model: '6.gltf'},
-        '乐山市': {prod: [150, 140, 180, 200], energy: [80, 92, 71, 104, 60, 150], type: [12, 8, 18, 15, 6], rate: 75, alarm: 15, trend: [80, 92, 71, 104, 60, 150], model: '10.gltf'},
+        '绵阳市': {prod: [220, 180, 250, 300], energy: [100, 112, 91, 124, 80, 210], type: [18, 12, 28, 22, 8], rate: 78, alarm: 12, trend: [100, 112, 91, 124, 80, 210], model: '2.gltf'},
+        '德阳市': {prod: [180, 160, 100, 240], energy: [90, 102, 81, 114, 70, 180], type: [15, 10, 20, 18, 7], rate: 82, alarm: 10, trend: [90, 102, 81, 114, 70, 180], model: '3.gltf'},
+        '乐山市': {prod: [150, 140, 180, 200], energy: [80, 92, 71, 104, 60, 150], type: [12, 8, 18, 15, 6], rate: 75, alarm: 15, trend: [80, 92, 71, 104, 60, 150], model: '4.gltf'},
         // ... 可继续补充其他市
     };
     var currentCity = '成都市';
+    // 暴露到全局作用域
+    window.currentCity = currentCity;
     // 初始化四川省地图
     var mapChart = echarts.init(document.getElementById('sichuanMap'));
     var mapOption = {
@@ -103,6 +105,7 @@
     mapChart.on('mouseover', function(params) {
         if(cityData[params.name]) {
             currentCity = params.name;
+            window.currentCity = currentCity; // 同步到全局
             updatePanels();
             updateKeyIndicators(currentCity);
             updateThreeDModel(currentCity);
@@ -112,6 +115,7 @@
     mapChart.on('click', function(params) {
         if(cityData[params.name]) {
             currentCity = params.name;
+            window.currentCity = currentCity; // 同步到全局
             updatePanels();
             updateKeyIndicators(currentCity);
             updateThreeDModel(currentCity);
@@ -182,12 +186,18 @@
         renderer.setSize(container.offsetWidth, container.offsetHeight);
         container.appendChild(renderer.domElement);
         
-        // 添加光源
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        // 添加光源（增强光照效果）
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
         directionalLight.position.set(10, 20, 20);
+        directionalLight.castShadow = true;
         scene.add(directionalLight);
+        
+        // 添加额外的点光源
+        const pointLight = new THREE.PointLight(0x00eaff, 0.5, 100);
+        pointLight.position.set(0, 10, 10);
+        scene.add(pointLight);
         
         // 开始动画循环
         animate();
@@ -253,6 +263,7 @@
         if (currentModel) {
             scene.remove(currentModel);
             currentModel = null;
+            console.log(`大屏BI - 已移除旧模型`);
         }
         
         // 显示加载状态
@@ -262,7 +273,7 @@
         
         // 加载新模型
         const loader = new GLTFLoader();
-        const modelPath = `./3d/solo/${cityInfo.model}`;
+        const modelPath = `./3d/${cityInfo.model}`;
         
         console.log(`大屏BI - 开始加载模型: ${modelPath}`);
         
@@ -273,12 +284,28 @@
                 // 隐藏加载状态
                 statusElement.style.display = 'none';
                 
-                         // 添加新模型到场景
-         currentModel = gltf.scene;
-         // 修复Z轴翻转问题
-         currentModel.rotation.x = Math.PI;
-         fitModelToView(currentModel);
-         scene.add(currentModel);
+                // 添加新模型到场景
+                currentModel = gltf.scene;
+                
+                // 添加材质和光照效果，解决纯白问题
+                currentModel.traverse(function(child) {
+                    if (child.isMesh) {
+                        // 确保材质正确显示
+                        if (child.material) {
+                            child.material.needsUpdate = true;
+                            // 如果材质是白色，给它一些颜色
+                            if (child.material.color && child.material.color.r === 1 && child.material.color.g === 1 && child.material.color.b === 1) {
+                                child.material.color.setHex(0x888888); // 设置为灰色
+                            }
+                        }
+                        // 确保接受光照
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+                
+                fitModelToView(currentModel);
+                scene.add(currentModel);
                 
                 console.log(`大屏BI - ${cityName}模型已添加到场景`);
             },
@@ -306,9 +333,9 @@
     function animate() {
         requestAnimationFrame(animate);
         
-        // 让当前模型缓慢旋转
+        // 让当前模型旋转（提高转速）
         if (currentModel) {
-            currentModel.rotation.y += 0.005;
+            currentModel.rotation.y += 0.015; // 提高转速
         }
         
         renderer.render(scene, camera);
