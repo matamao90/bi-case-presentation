@@ -5,8 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>瑞途电子·智能工厂数据大屏</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+            }
+        }
+    </script>
     <style>
         * {
             margin: 0;
@@ -356,7 +362,10 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
         // 全局变量
         let scene, camera, renderer, currentModel;
         let isLeftPanelCollapsed = false;
@@ -451,7 +460,7 @@
             
             console.log(`工业大屏 - 开始加载背景模型: ${modelPath}`);
             
-            const loader = new THREE.GLTFLoader();
+            const loader = new GLTFLoader();
             loader.load(modelPath,
                 function(gltf) {
                     console.log('工业大屏 - 背景模型加载成功!');
@@ -554,7 +563,7 @@
          * @description 切换面板显示/隐藏
          * @param {string} side 面板位置 ('left' 或 'right')
          */
-        function togglePanel(side) {
+        window.togglePanel = function(side) {
             if (side === 'left') {
                 const panel = document.getElementById('leftPanel');
                 const btn = panel.querySelector('.toggle-btn');
@@ -580,26 +589,34 @@
                     btn.innerHTML = '›';
                 }
             }
-        }
+        };
 
         /**
          * @function showAnnotationDetail
          * @description 显示标注详情
          * @param {number} id 标注ID
          */
-        function showAnnotationDetail(id) {
+        window.showAnnotationDetail = function(id) {
             if (id === 1) {
                 alert('生产线A详情:\n设备编号: PL-001\n运行时间: 8小时\n当前产量: 1,245件\n目标产量: 1,300件\n完成率: 95.8%');
             } else if (id === 2) {
                 alert('质检区域详情:\n检测设备: QC-002\n检测速度: 150件/小时\n合格率: 98.5%\n今日检测: 1,180件\n不合格品: 18件');
             }
-        }
+        };
 
         /**
          * @function initCharts
          * @description 初始化所有图表
          */
         function initCharts() {
+            console.log('工业大屏 - 开始初始化图表...');
+            
+            // 确保ECharts已加载
+            if (typeof echarts === 'undefined') {
+                console.error('ECharts未加载');
+                return;
+            }
+
             // 生产监控图表
             const productionChart = echarts.init(document.getElementById('productionChart'));
             productionChart.setOption({

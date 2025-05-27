@@ -1,14 +1,16 @@
 @echo off
+chcp 65001 >nul
 echo ========================================
-echo     瑞途电子 BI大屏 本地服务器启动
+echo     RUITECH BI Dashboard Server
 echo ========================================
 echo.
-echo 正在启动HTTP服务器...
-echo 服务器地址: http://localhost:8000
-echo 主页地址: http://localhost:8000/index.html
-echo BI大屏地址: http://localhost:8000/大屏BI.html
+echo Starting HTTP Server...
+echo Server Address: http://localhost:8000
+echo Main Page: http://localhost:8000/index.html
+echo BI Dashboard: http://localhost:8000/大屏BI.html
+echo Industrial Dashboard: http://localhost:8000/工业大屏.html
 echo.
-echo 按 Ctrl+C 停止服务器
+echo Press Ctrl+C to stop server
 echo ========================================
 echo.
 
