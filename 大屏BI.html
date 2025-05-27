@@ -83,10 +83,10 @@
     typeTitle();
     // 四川省各市模拟数据，每个城市对应不同的3D模型
     var cityData = {
-        '成都市': {prod: [1320, 1280, 1350, 1400], energy: [120, 132, 101, 134, 90, 230], type: [20, 15, 30, 25, 10], rate: 86, alarm: 8, trend: [120, 132, 101, 134, 90, 230], model: 'solo/1.gltf'},
-        '绵阳市': {prod: [220, 180, 250, 300], energy: [100, 112, 91, 124, 80, 210], type: [18, 12, 28, 22, 8], rate: 78, alarm: 12, trend: [100, 112, 91, 124, 80, 210], model: 'solo/2.gltf'},
-        '德阳市': {prod: [180, 160, 100, 240], energy: [90, 102, 81, 114, 70, 180], type: [15, 10, 20, 18, 7], rate: 82, alarm: 10, trend: [90, 102, 81, 114, 70, 180], model: 'solo/3.gltf'},
-        '乐山市': {prod: [150, 140, 180, 200], energy: [80, 92, 71, 104, 60, 150], type: [12, 8, 18, 15, 6], rate: 75, alarm: 15, trend: [80, 92, 71, 104, 60, 150], model: 'solo/4.gltf'},
+        '成都市': {prod: [1320, 1280, 1350, 1400], energy: [120, 132, 101, 134, 90, 230], type: [20, 15, 30, 25, 10], rate: 86, alarm: 8, trend: [120, 132, 101, 134, 90, 230], model: '3d/solo/1.gltf'},
+        '绵阳市': {prod: [520, 480, 250, 300], energy: [100, 112, 91, 124, 20, 210], type: [18, 12, 28, 22, 8], rate: 78, alarm: 12, trend: [100, 112, 91, 124, 80, 210], model: '3d/solo/2.gltf'},
+        '德阳市': {prod: [180, 160, 700, 240], energy: [90, 102, 81, 214, 70, 180], type: [15, 10, 20, 18, 7], rate: 82, alarm: 10, trend: [90, 102, 81, 114, 70, 180], model: '3d/solo/3.gltf'},
+        '乐山市': {prod: [150, 240, 480, 200], energy: [80, 92, 371, 104, 60, 150], type: [12, 8, 18, 15, 6], rate: 75, alarm: 15, trend: [80, 92, 71, 104, 60, 150], model: '3d/solo/4.gltf'},
         // ... 可继续补充其他市
     };
     var currentCity = '成都市';
@@ -295,7 +295,7 @@
         
         // 加载新模型
         const loader = new GLTFLoader();
-        const modelPath = `./3d/${cityInfo.model}`;
+        const modelPath = cityInfo.model; // 直接使用相对路径
         
         console.log(`大屏BI - 开始加载模型: ${modelPath}`);
         
